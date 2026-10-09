@@ -1,69 +1,104 @@
-import Image from "next/image";
+"use client";
+
+import type { ChangeEvent, FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
+import { EmptyState } from "../components/EmptyState";
+import { TodoForm } from "../components/TodoForm";
+import { TodoList } from "../components/TodoList";
+import type { Todo } from "../components/types";
+
+const STORAGE_KEY = "mbs-todo-list";
+
+function isTodo(value: unknown): value is Todo {
+  if (!value || typeof value !== "object") return false;
+  const todo = value as Record<string, unknown>;
+  return typeof todo.id === "string" && typeof todo.text === "string" && typeof todo.completed === "boolean";
+}
 
 export default function Home() {
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const hasLoadedTodos = useRef(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    try {
+      const storedTodos = window.localStorage.getItem(STORAGE_KEY);
+      if (storedTodos) {
+        const parsedTodos: unknown = JSON.parse(storedTodos);
+        if (Array.isArray(parsedTodos)) {
+          const loadedTodos = parsedTodos.filter(isTodo);
+          queueMicrotask(() => {
+            if (!cancelled) setTodos(loadedTodos);
+          });
+        }
+      }
+    } catch {
+      // Si el almacenamiento está corrupto o no está disponible, comenzamos vacío.
+    } finally {
+      queueMicrotask(() => {
+        if (!cancelled) hasLoadedTodos.current = true;
+      });
+    }
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedTodos.current) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+    } catch {
+      // La aplicación sigue siendo utilizable aunque localStorage esté bloqueado.
+    }
+  }, [todos]);
+
+  function addTodo(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const text = inputValue.trim();
+    if (!text) return;
+    setTodos((currentTodos) => [{ id: crypto.randomUUID(), text, completed: false }, ...currentTodos]);
+    setInputValue("");
+  }
+
+  function toggleTodo(id: string) {
+    setTodos((currentTodos) => currentTodos.map((todo) => todo.id === id ? { ...todo, completed: !todo.completed } : todo));
+  }
+
+  function deleteTodo(id: string) {
+    setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
+  }
+
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    setInputValue(event.target.value);
+  }
+
+  const completedCount = todos.filter((todo) => todo.completed).length;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="min-h-screen bg-slate-100 px-4 py-10 text-slate-900 sm:px-6 sm:py-16">
+      <section className="mx-auto w-full max-w-2xl">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-200">
+            <svg aria-hidden="true" className="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="m5 12 4 4L19 6" /></svg>
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Mis tareas</h1>
+          <p className="mt-2 text-slate-500">Organiza tu día, una tarea a la vez.</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/70 ring-1 ring-slate-200">
+          <TodoForm value={inputValue} onChange={handleInputChange} onSubmit={addTodo} />
+
+          <div className="flex items-center justify-between px-4 pb-2 pt-5 sm:px-6">
+            <h2 className="text-sm font-semibold text-slate-700">Tu lista</h2>
+            <span className="text-xs font-medium text-slate-400">{completedCount} de {todos.length} completadas</span>
+          </div>
+
+          {todos.length > 0 ? <TodoList todos={todos} onToggle={toggleTodo} onDelete={deleteTodo} /> : <EmptyState />}
         </div>
-      </main>
-    </div>
+        <p className="mt-5 text-center text-xs text-slate-400">Tus tareas se guardan automáticamente en este dispositivo.</p>
+      </section>
+    </main>
   );
 }
