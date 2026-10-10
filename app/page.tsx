@@ -18,6 +18,8 @@ function isTodo(value: unknown): value is Todo {
 export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
   const hasLoadedTodos = useRef(false);
 
   useEffect(() => {
@@ -70,6 +72,31 @@ export default function Home() {
     setTodos((currentTodos) => currentTodos.filter((todo) => todo.id !== id));
   }
 
+  function startEdit(todo: Todo) {
+    setEditingId(todo.id);
+    setEditValue(todo.text);
+  }
+
+  function handleEditChange(event: ChangeEvent<HTMLInputElement>) {
+    setEditValue(event.target.value);
+  }
+
+  function submitEdit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (editingId === null) return;
+    const text = editValue.trim();
+    if (text) {
+      setTodos((currentTodos) => currentTodos.map((todo) => todo.id === editingId ? { ...todo, text } : todo));
+    }
+    setEditingId(null);
+    setEditValue("");
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditValue("");
+  }
+
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
     setInputValue(event.target.value);
   }
@@ -99,7 +126,19 @@ export default function Home() {
             <span className="text-xs font-medium text-slate-400">{completedCount} de {todos.length} completadas</span>
           </div>
 
-          {todos.length > 0 ? <TodoList todos={orderedTodos} onToggle={toggleTodo} onDelete={deleteTodo} /> : <EmptyState />}
+          {todos.length > 0 ? (
+            <TodoList
+              todos={orderedTodos}
+              editingId={editingId}
+              editValue={editValue}
+              onToggle={toggleTodo}
+              onDelete={deleteTodo}
+              onStartEdit={startEdit}
+              onEditChange={handleEditChange}
+              onSubmitEdit={submitEdit}
+              onCancelEdit={cancelEdit}
+            />
+          ) : <EmptyState />}
         </div>
         <p className="mt-5 text-center text-xs text-slate-400">Tus tareas se guardan automáticamente en este dispositivo.</p>
       </section>

@@ -38,6 +38,7 @@ The interface communicates its state at a glance:
 
 - **Create tasks** from an accessible form with whitespace-only input validation.
 - **Complete and reopen tasks** with a circular control and `aria-pressed` state.
+- **Edit tasks in place**, saving with Enter and cancelling with Escape.
 - **Delete tasks** individually.
 - **Progress counter** showing completed tasks against the total.
 - **Local persistence** through `localStorage` using the `mbs-todo-list` key.
@@ -119,7 +120,7 @@ npm run start
 1. `app/page.tsx` keeps the task array and form text in React state with `useState`.
 2. On mount, it reads `mbs-todo-list` from `localStorage` and filters out records that do not match the `Todo` model.
 3. After the initial data load, every list change is serialized and saved automatically.
-4. Actions stay small and predictable: add to the beginning, toggle `completed` by `id`, and filter to delete.
+4. Actions stay small and predictable: add to the beginning, edit `text` by `id`, toggle `completed` by `id`, and filter to delete.
 5. Components in `components/` receive data and callbacks, keeping visual composition separate from state logic.
 
 ### Data model
@@ -149,7 +150,6 @@ The application is compatible with standard Next.js deployments. A simple option
 
 ## 🧭 Roadmap
 
-- Edit the text of an existing task.
 - Add status filters and an action to clear completed tasks.
 - Add automated tests for the logic and components.
 - Add optional synchronization with an API or database.
