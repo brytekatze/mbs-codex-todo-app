@@ -74,6 +74,10 @@ export default function Home() {
     setInputValue(event.target.value);
   }
 
+  const orderedTodos = [
+    ...todos.filter((todo) => !todo.completed),
+    ...todos.filter((todo) => todo.completed),
+  ];
   const completedCount = todos.filter((todo) => todo.completed).length;
 
   return (
@@ -95,7 +99,7 @@ export default function Home() {
             <span className="text-xs font-medium text-slate-400">{completedCount} de {todos.length} completadas</span>
           </div>
 
-          {todos.length > 0 ? <TodoList todos={todos} onToggle={toggleTodo} onDelete={deleteTodo} /> : <EmptyState />}
+          {todos.length > 0 ? <TodoList todos={orderedTodos} onToggle={toggleTodo} onDelete={deleteTodo} /> : <EmptyState />}
         </div>
         <p className="mt-5 text-center text-xs text-slate-400">Tus tareas se guardan automáticamente en este dispositivo.</p>
       </section>
